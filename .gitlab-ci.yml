@@ -1,0 +1,15 @@
+before_script:
+    - call ./fips fetch
+    - call ./fips update
+    - call ./fips nebula set work ../fips-deploy/
+    - call ./fips nebula set toolkit .
+    
+stages:
+    - build
+
+build:
+   stage: build
+   script:
+    - call ./fips set config vulkan-win64-vstudio-debug
+    - call ./fips gen
+    - call ./fips build
