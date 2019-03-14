@@ -277,7 +277,7 @@ DemoApplication::Run()
 		//-------------------
 		// Render points on each vertex
 
-		auto gfxEntity = this->entity;
+		auto gfxEntity = this->ground;
 
 		auto modelId = ModelContext::GetModel(gfxEntity);
 		const Util::Array<Models::ModelNode::Instance*>& nodes = ModelContext::GetModelNodeInstances(gfxEntity);
@@ -320,8 +320,8 @@ DemoApplication::Run()
 				// CoreGraphics::vboPool->
 				auto indexType = CoreGraphics::IndexBufferGetType(ib);
 
-				void* vbo = CoreGraphics::VertexBufferMap(vb, CoreGraphics::GpuBufferTypes::MapRead);
-				void* ibo = CoreGraphics::IndexBufferMap(ib, CoreGraphics::GpuBufferTypes::MapRead);
+				void* vbo = CoreGraphics::VertexBufferMap(vb, CoreGraphics::GpuBufferTypes::MapReadWrite);
+				void* ibo = CoreGraphics::IndexBufferMap(ib, CoreGraphics::GpuBufferTypes::MapReadWrite);
 				
 				for (IndexT j = 0; j < numIndices; j++)
 				{
@@ -334,12 +334,14 @@ DemoApplication::Run()
 					float num = numIndices;
 					float vn = j;
 
+					float t = (num / 3.0f);
+
 					if (j < (numIndices / 3))
-						r = ((vn / 3.0f) / (num / 3.0f));
+						r = (vn / t);
 					else if (j < (2 * numIndices / 3))
-						g = (vn / 3.0f) / (num / 3.0f);
+						g = (vn - t) / t;
 					else
-						b = (vn / 3.0f) / (num / 3.0f);
+						b = (vn - (2.0f * t)) / t;
 
 					//r = vn / num;
 
@@ -426,18 +428,6 @@ DemoApplication::CleanupGameFeatures()
 	this->audioFeature->Release();
 	this->audioFeature = nullptr;
 }
-
-//------------------------------------------------------------------------------
-/**
-*/
-static const char * 
-GraphicsEntityToName(GraphicsEntityId id)
-{
-    if (ModelContext::IsEntityRegistered(id)) return "Model";
-    if (Lighting::LightContext::IsEntityRegistered(id)) return "Light";
-    return "Entity";
-}
-
 
 //------------------------------------------------------------------------------
 /**
