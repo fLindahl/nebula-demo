@@ -46,7 +46,6 @@ public:
 
 protected:
     void RenderUI();
-    void RenderEntityUI();
     void UpdateCamera();
     void ResetCamera();
     void ToMaya();
@@ -88,7 +87,7 @@ protected:
 
     Math::transform44 transform;
 
-    bool renderDebug = true;
+    bool renderDebug = false;
     int cameraMode = 0;
     float zoomIn = 0.0f;
     float zoomOut = 0.0f;

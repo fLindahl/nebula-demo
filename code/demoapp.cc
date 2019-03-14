@@ -21,6 +21,10 @@
 #include "dynui/im3d/im3d.h"
 #include "scripting/python/pythonserver.h"
 
+#include "coregraphics/memorymeshpool.h"
+#include "coregraphics/memoryindexbufferpool.h"
+#include "coregraphics/memoryvertexbufferpool.h"
+
 #ifdef __WIN32__
 #include <shellapi.h>
 #elif __LINUX__
@@ -101,6 +105,16 @@ DemoApplication::Open()
         CameraContext::RegisterEntity(this->cam);
         CameraContext::SetupProjectionFov(this->cam, width / (float)height, 45.f, 0.01f, 1000.0f);
 
+		this->defaultViewPoint = Math::point(15.0f, 15.0f, -15.0f);
+        this->ResetCamera();
+        CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
+
+        this->view->SetCamera(this->cam);
+        this->view->SetStage(this->stage);
+
+		// register visibility system
+		ObserverContext::CreateBruteforceSystem({});
+
 		this->globalLight = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->globalLight);
 		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, Math::vector(1, 1, 1), false);
@@ -108,7 +122,7 @@ DemoApplication::Open()
 		this->pointLights[0] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[0]);
 		Lighting::LightContext::SetupPointLight(this->pointLights[0], Math::float4(1, 0, 0, 1), 10.0f, Math::matrix44::translation(0, 0, -10), 10.0f, false);
-        
+
 		this->pointLights[1] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[1]);
 		Lighting::LightContext::SetupPointLight(this->pointLights[1], Math::float4(0, 1, 0, 1), 10.0f, Math::matrix44::translation(-10, 0, -10), 10.0f, false);
@@ -117,10 +131,10 @@ DemoApplication::Open()
 		Lighting::LightContext::RegisterEntity(this->pointLights[2]);
 		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 10.0f, Math::matrix44::translation(-10, 0, 0), 10.0f, false);
 
-        for (int i = 0; i < 3; i++)
-        {
-            this->entities.Append(this->pointLights[i]);
-        }
+		for (int i = 0; i < 3; i++)
+		{
+			this->entities.Append(this->pointLights[i]);
+		}
 
 		{
 			this->spotLights[0] = Graphics::CreateEntity();
@@ -152,27 +166,17 @@ DemoApplication::Open()
 			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 1.0f, spotLightMatrix, false);
 		}
 
-        this->defaultViewPoint = Math::point(15.0f, 15.0f, -15.0f);
-        this->ResetCamera();
-        CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
-
-        this->view->SetCamera(this->cam);
-        this->view->SetStage(this->stage);
+		this->ground = Graphics::CreateEntity();
+		ModelContext::RegisterEntity(this->ground);
+		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
+		ModelContext::SetTransform(this->ground, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
+		this->entities.Append(this->ground);
 
         this->entity = Graphics::CreateEntity();
         ModelContext::RegisterEntity(this->entity);
         ModelContext::Setup(this->entity, "mdl:Buildings/castle_tower.n3", "Viewer");
         ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
         this->entities.Append(this->entity);
-
-		this->ground = Graphics::CreateEntity();
-		ModelContext::RegisterEntity(this->ground);
-		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
-		ModelContext::SetTransform(this->ground, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
-        this->entities.Append(this->ground);
-
-        // register visibility system
-        ObserverContext::CreateBruteforceSystem({});
 
         ObservableContext::RegisterEntity(this->entity);
         ObservableContext::Setup(this->entity, VisibilityEntityType::Model);
@@ -263,13 +267,90 @@ DemoApplication::Run()
         
         // put game code which doesn't need visibility data or animation here
         this->gfxServer->BeforeViews();
-        this->RenderUI();             
+        this->RenderUI();
 
         if (this->renderDebug)
         {
             this->gfxServer->RenderDebug(0);
         }
         
+		//-------------------
+		// Render points on each vertex
+
+		auto gfxEntity = this->entity;
+
+		auto modelId = ModelContext::GetModel(gfxEntity);
+		const Util::Array<Models::ModelNode::Instance*>& nodes = ModelContext::GetModelNodeInstances(gfxEntity);
+		const auto& nodeTypes = ModelContext::GetModelNodeTypes(gfxEntity);
+
+		// check if node is primitive type.
+		for (IndexT n = 0; n < nodes.Size(); ++n)
+		{
+			if (nodeTypes[n] == Models::NodeType::PrimitiveNodeType)
+			{
+				auto primitive = static_cast<Models::PrimitiveNode*>(nodes[n]->node);
+				auto meshId = primitive->GetMeshId();
+				auto groupIdx = primitive->GetPrimitiveGroupIndex();			
+				CoreGraphics::meshPool->BeginGet();
+				auto const& primGroups = CoreGraphics::MeshGetPrimitiveGroups(meshId);
+				
+				auto baseIndex = primGroups[groupIdx].GetBaseIndex();
+				auto baseVertex = primGroups[groupIdx].GetBaseVertex();
+				auto numIndices = primGroups[groupIdx].GetNumIndices();
+				auto vertexLayoutId = primGroups[groupIdx].GetVertexLayout();
+				auto vertexSize = CoreGraphics::VertexLayoutGetSize(vertexLayoutId);
+				
+				auto const& ib = CoreGraphics::MeshGetIndexBuffer(meshId);
+				auto const& vb = CoreGraphics::MeshGetVertexBuffer(meshId, 0);
+				
+				CoreGraphics::meshPool->EndGet();
+
+				auto vcs = CoreGraphics::VertexLayoutGetComponents(vertexLayoutId);
+				IndexT positionOffset = 0;
+				for (auto const& vc : vcs)
+				{
+					if (vc.GetSemanticName() == CoreGraphics::VertexComponent::Position)
+					{
+						positionOffset = vc.GetByteOffset();
+						break;
+					}
+				}
+
+				// CoreGraphics::iboPool->
+				// CoreGraphics::vboPool->
+				auto indexType = CoreGraphics::IndexBufferGetType(ib);
+
+				void* vbo = CoreGraphics::VertexBufferMap(vb, CoreGraphics::GpuBufferTypes::MapRead);
+				void* ibo = CoreGraphics::IndexBufferMap(ib, CoreGraphics::GpuBufferTypes::MapRead);
+				
+				for (IndexT j = 0; j < numIndices; j++)
+				{
+					IndexT index = ((IndexT*)ibo)[baseIndex + j];
+					float* vertex = (float*)&(((ubyte*)vbo)[baseVertex + positionOffset + (index * vertexSize)]);
+					float r = 0;
+					float g = 0;
+					float b = 0;
+					
+					float num = numIndices;
+					float vn = j;
+
+					if (j < (numIndices / 3))
+						r = ((vn / 3.0f) / (num / 3.0f));
+					else if (j < (2 * numIndices / 3))
+						g = (vn / 3.0f) / (num / 3.0f);
+					else
+						b = (vn / 3.0f) / (num / 3.0f);
+
+					//r = vn / num;
+
+					Im3d::DrawPoint(Im3d::Vec3(vertex[0], vertex[1], vertex[2]), 10.0f, Im3d::Color(r,g,b, 1.0f));
+				}
+
+				CoreGraphics::IndexBufferUnmap(ib);
+				CoreGraphics::VertexBufferUnmap(vb);
+			}
+		}
+
         // put game code which need visibility data here
 
         this->gfxServer->RenderViews();
@@ -357,45 +438,7 @@ GraphicsEntityToName(GraphicsEntityId id)
     return "Entity";
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DemoApplication::RenderEntityUI()
-{
-    ImGui::Begin("Entities", nullptr, 0);
-	ImGui::SetWindowSize(ImVec2(240, 400));
-    ImGui::BeginChild("##entities", ImVec2(0, 300), true);
-    static int selected = 0;
-    for (int i = 0 ; i < this->entities.Size();i++)
-    {
-        Util::String sid;
-        sid.Format("%s: %d", GraphicsEntityToName(this->entities[i]), this->entities[i]);
-        if (ImGui::Selectable(sid.AsCharPtr(), i == selected))
-        {
-            selected = i;
-        }        
-    }
-    ImGui::EndChild();
-    ImGui::End();
-    auto id = this->entities[selected];
-    if (ModelContext::IsEntityRegistered(id))
-    {
-        Im3d::Mat4 trans = ModelContext::GetTransform(id);
-        if (Im3d::Gizmo("GizmoEntity", trans))
-        {            
-            ModelContext::SetTransform(id, trans);
-        }
-    }            
-    else if (Lighting::LightContext::IsEntityRegistered(id))
-    {
-        Im3d::Mat4 trans = Lighting::LightContext::GetTransform(id);
-        if (Im3d::Gizmo("GizmoEntity", trans))
-        {
-            Lighting::LightContext::SetTransform(id, trans);
-        }
-    }
-}
+
 //------------------------------------------------------------------------------
 /**
 */
