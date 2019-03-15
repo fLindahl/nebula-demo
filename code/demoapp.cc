@@ -284,13 +284,13 @@ DemoApplication::Run()
 		//-------------------
 		// Render points on each vertex
 
-		auto gfxEntity = this->ground;
+		auto gfxEntity = this->entity;
 
 		auto modelId = ModelContext::GetModel(gfxEntity);
 		const Util::Array<Models::ModelNode::Instance*>& nodes = ModelContext::GetModelNodeInstances(gfxEntity);
 		const auto& nodeTypes = ModelContext::GetModelNodeTypes(gfxEntity);
 		
-		if (!keyboard->KeyPressed(Input::Key::Code::LeftMenu) && mouse->ButtonPressed(Input::MouseButton::Code::LeftButton))
+		if (!keyboard->KeyPressed(Input::Key::Code::LeftMenu) && mouse->ButtonPressed(Input::MouseButton::Code::RightButton))
 		{
 			line = RenderUtil::MouseRayUtil::ComputeWorldMouseRay(
 				mouse->GetScreenPosition(),
@@ -301,7 +301,7 @@ DemoApplication::Run()
 			);
 		}
 
-		Im3d::DrawLine(line.start(), line.end(), 10.0f, Im3d::Color_Red);
+		// Im3d::DrawLine(line.start(), line.end(), 10.0f, Im3d::Color_Red);
 
 		float closestDistance = 999999999999.0f;
 
@@ -349,14 +349,18 @@ DemoApplication::Run()
 				for (IndexT j = 0; j < numVertices; j++)
 				{
 					IndexT index = baseVertex + positionOffset + (j * vertexSize); // ((IndexT*)ibo)[baseIndex + j];
-					Math::point vertex;
-					vertex.load((float*)&(((ubyte*)vbo)[index]));
-
-					float dist = line.distance(vertex);
-					if (dist < closestDistance)
+					float* v = (float*)&(((ubyte*)vbo)[index]);
+					Math::point vertex(v[0], v[1], v[2]);
+					
+					if (!keyboard->KeyPressed(Input::Key::Code::LeftMenu) && mouse->ButtonPressed(Input::MouseButton::Code::RightButton))
 					{
-						closestDistance = dist;
-						hoveredIndex = index;
+						float dist = line.distance(vertex);
+						if (dist < closestDistance)
+						{
+
+							closestDistance = dist;
+							hoveredIndex = index;
+						}
 					}
 
 					const Im3d::Color color = Im3d::Color_Green;
@@ -372,7 +376,7 @@ DemoApplication::Run()
 				vertex = ((float*)&(((ubyte*)vbo)[hoveredIndex]));
 				Im3d::DrawPoint(Im3d::Vec3(vertex[0], vertex[1], vertex[2]), size, color);
 
-				/// if (Im3d::GizmoTranslation("vertex", vertex, true))
+				if (Im3d::GizmoTranslation("vertex", vertex, false))
 				{
 					
 				}
