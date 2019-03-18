@@ -20,12 +20,7 @@
 #include "dynui/im3d/im3dcontext.h"
 #include "dynui/im3d/im3d.h"
 #include "scripting/python/pythonserver.h"
-
-#include "coregraphics/memorymeshpool.h"
-#include "coregraphics/memoryindexbufferpool.h"
-#include "coregraphics/memoryvertexbufferpool.h"
-
-#include "renderutil/mouserayutil.h"
+#include "vertextool.h"
 
 #ifdef __WIN32__
 #include <shellapi.h>
@@ -241,14 +236,9 @@ DemoApplication::Run()
 {    
     bool run = true;
 
-    const Ptr<Input::Keyboard>& keyboard = inputServer->GetDefaultKeyboard();
-    const Ptr<Input::Mouse>& mouse = inputServer->GetDefaultMouse();
-    
-	Math::line line;
-
-	IndexT hoveredIndex = 0;
-	IndexT selectedIndex = 0;
-
+	Tools::VertexTool vertexTool;
+	vertexTool.SetCameraEntity(this->cam);
+	
     while (run && !inputServer->IsQuitRequested())
     {                     
         this->inputServer->BeginFrame();
@@ -275,124 +265,23 @@ DemoApplication::Run()
         // put game code which doesn't need visibility data or animation here
         this->gfxServer->BeforeViews();
         this->RenderUI();
+		
+		if (this->inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::O))
+		{
+			Models::ModelId model = ModelContext::GetModel(this->entity);
+			if (modelPool->GetState(model) == Resources::Resource::State::Loaded)
+			{
+				vertexTool.SetGraphicsEntity(this->entity);
+			}
+		}
+		vertexTool.Update();
 
         if (this->renderDebug)
         {
             this->gfxServer->RenderDebug(0);
         }
         
-		//-------------------
-		// Render points on each vertex
-
-		auto gfxEntity = this->entity;
-
-		auto modelId = ModelContext::GetModel(gfxEntity);
-		const Util::Array<Models::ModelNode::Instance*>& nodes = ModelContext::GetModelNodeInstances(gfxEntity);
-		const auto& nodeTypes = ModelContext::GetModelNodeTypes(gfxEntity);
-		
-		if (!keyboard->KeyPressed(Input::Key::Code::LeftMenu) && mouse->ButtonPressed(Input::MouseButton::Code::RightButton))
-		{
-			line = RenderUtil::MouseRayUtil::ComputeWorldMouseRay(
-				mouse->GetScreenPosition(),
-				9999999.0f,
-				Math::matrix44::inverse(CameraContext::GetTransform(this->cam)),
-				Math::matrix44::inverse(CameraContext::GetProjection(this->cam)),
-				CameraContext::GetSettings(this->cam).GetZNear()
-			);
-		}
-
-		// Im3d::DrawLine(line.start(), line.end(), 10.0f, Im3d::Color_Red);
-
-		float closestDistance = 999999999999.0f;
-
-		// check if node is primitive type.
-		for (IndexT n = 0; n < nodes.Size(); ++n)
-		{
-			if (nodeTypes[n] == Models::NodeType::PrimitiveNodeType)
-			{
-				auto primitive = static_cast<Models::PrimitiveNode*>(nodes[n]->node);
-				auto meshId = primitive->GetMeshId();
-				auto groupIdx = primitive->GetPrimitiveGroupIndex();
-				CoreGraphics::meshPool->BeginGet();
-				auto const& primGroups = CoreGraphics::MeshGetPrimitiveGroups(meshId);
-				
-				auto baseIndex = primGroups[groupIdx].GetBaseIndex();
-				auto baseVertex = primGroups[groupIdx].GetBaseVertex();
-				auto numIndices = primGroups[groupIdx].GetNumIndices();
-				auto numVertices = primGroups[groupIdx].GetNumVertices();
-				auto vertexLayoutId = primGroups[groupIdx].GetVertexLayout();
-				auto vertexSize = CoreGraphics::VertexLayoutGetSize(vertexLayoutId);
-				
-				auto const& ib = CoreGraphics::MeshGetIndexBuffer(meshId);
-				auto const& vb = CoreGraphics::MeshGetVertexBuffer(meshId, 0);
-				
-				CoreGraphics::meshPool->EndGet();
-
-				auto vcs = CoreGraphics::VertexLayoutGetComponents(vertexLayoutId);
-				IndexT positionOffset = 0;
-				for (auto const& vc : vcs)
-				{
-					if (vc.GetSemanticName() == CoreGraphics::VertexComponent::Position)
-					{
-						positionOffset = vc.GetByteOffset();
-						break;
-					}
-				}
-
-				// CoreGraphics::iboPool->
-				// CoreGraphics::vboPool->
-				auto indexType = CoreGraphics::IndexBufferGetType(ib);
-
-				void* vbo = CoreGraphics::VertexBufferMap(vb, CoreGraphics::GpuBufferTypes::MapReadWrite);
-				void* ibo = CoreGraphics::IndexBufferMap(ib, CoreGraphics::GpuBufferTypes::MapReadWrite);
-				
-				for (IndexT j = 0; j < numVertices; j++)
-				{
-					IndexT index = baseVertex + positionOffset + (j * vertexSize); // ((IndexT*)ibo)[baseIndex + j];
-					float* v = (float*)&(((ubyte*)vbo)[index]);
-					Math::point vertex(v[0], v[1], v[2]);
-					
-					if (!keyboard->KeyPressed(Input::Key::Code::LeftMenu) && mouse->ButtonPressed(Input::MouseButton::Code::RightButton))
-					{
-						float dist = line.distance(vertex);
-						if (dist < closestDistance)
-						{
-
-							closestDistance = dist;
-							hoveredIndex = index;
-						}
-					}
-
-					const Im3d::Color color = Im3d::Color_Green;
-					float size = 10.0f;
-
-					Im3d::DrawPoint(Im3d::Vec3(vertex[0], vertex[1], vertex[2]), size, color);
-				}
-
-				// Draw hovered index last
-				Im3d::Color color = Im3d::Color_Red;
-				float size = 15.0f;
-				float* vertex;
-				vertex = ((float*)&(((ubyte*)vbo)[hoveredIndex]));
-				Im3d::DrawPoint(Im3d::Vec3(vertex[0], vertex[1], vertex[2]), size, color);
-
-				if (Im3d::GizmoTranslation("vertex", vertex, false))
-				{
-					
-				}
-
-				CoreGraphics::IndexBufferUnmap(ib);
-				CoreGraphics::VertexBufferUnmap(vb);
-			}
-		}
-
-		ImGui::Begin("mouse");
-		ImGui::Text(Util::String::FromFloat2(mouse->GetScreenPosition()).AsCharPtr());
-		ImGui::Text("Hovered index: %i", hoveredIndex);
-		ImGui::Text("Selected index: %i", selectedIndex);
-		ImGui::End();
-
-        // put game code which need visibility data here
+		// put game code which need visibility data here
 
         this->gfxServer->RenderViews();
 
