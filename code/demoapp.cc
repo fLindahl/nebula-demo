@@ -19,7 +19,7 @@
 #include "imgui.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "dynui/im3d/im3d.h"
-#include "scripting/python/pythonserver.h"
+#include "scripting/mono/monoserver.h"
 #include "vertextool.h"
 
 #ifdef __WIN32__
@@ -70,7 +70,7 @@ DemoApplication::Open()
         this->inputServer->Open();
         this->gfxServer->Open();
 
-		this->scriptserver = Scripting::PythonServer::Create();
+		this->scriptserver = Scripting::MonoServer::Create();
 		this->scriptserver->Open();
 
         SizeT width = this->GetCmdLineArgs().GetInt("-w", 800);
@@ -206,6 +206,8 @@ DemoApplication::Open()
 		ModelContext::EndBulkRegister();
 		ObservableContext::EndBulkRegister();
         this->UpdateCamera();
+
+		// IO::AssignRegistry::Instance()->SetAssign(IO::Assign("scripts", "tool:data/scripts"));
 
         return true;
     }

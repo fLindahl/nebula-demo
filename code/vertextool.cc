@@ -74,11 +74,6 @@ void VertexTool::Update()
 			Im3d::DrawPoint(Im3d::Vec3(vertex[0], vertex[1], vertex[2]), size, color);
 		}
 
-		if (!keyboard->KeyPressed(Input::Key::Code::LeftMenu) && mouse->ButtonPressed(Input::MouseButton::Code::RightButton))
-		{
-			selectedIndex = hoveredIndex;
-		}
-
 		// Draw hovered index last
 		Im3d::Color color = Im3d::Color(0.0,0.8f,0.0f,1.0f);
 		float size = 10.0f;
@@ -89,12 +84,39 @@ void VertexTool::Update()
 
 		color = Im3d::Color_Red;
 		size = 15.0f;
-		vertex = ((float*)&(((ubyte*)vbo)[selectedIndex]));
+		vertex = ((float*)&(((ubyte*)vbo)[selectedIndex[0]]));
 		Im3d::DrawPoint(Im3d::Vec3(vertex[0], vertex[1], vertex[2]), size, color);
 
 		if (Im3d::GizmoTranslation("vertex", vertex, false))
 		{
-					
+			// Nothing atm.
+		}
+		else if (!keyboard->KeyPressed(Input::Key::Code::LeftMenu))
+		{
+			if (mouse->ButtonPressed(Input::MouseButton::Code::LeftButton))
+			{
+				this->selectedIndex = { this->hoveredIndex };
+			}
+
+			if (mouse->ButtonDown(Input::MouseButton::Code::LeftButton))
+			{
+				// Start selecting points
+				this->selectionStart = mouse->GetScreenPosition();
+			}
+			if (mouse->ButtonUp(Input::MouseButton::Code::LeftButton))
+			{
+				// Start selecting points
+				this->selectionEnd = mouse->GetScreenPosition();
+
+				auto diff = this->selectionStart - this->selectionEnd;
+				if (diff.length() < 0.05f)
+				{
+					this->selectedIndex = { this->hoveredIndex };
+				}
+
+				// Find all points within a box extending from screen to infinity
+
+			}
 		}
 	}
 	Timing::Time last = timer.GetTime();

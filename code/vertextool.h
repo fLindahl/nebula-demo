@@ -25,7 +25,10 @@ private:
 	Graphics::GraphicsEntityId entity;
 	Graphics::GraphicsEntityId cam;
 	IndexT hoveredIndex = 0;
-	IndexT selectedIndex = 0;
+	Util::Array<IndexT> selectedIndex = { 0 };
+
+	Math::float2 selectionStart;
+	Math::float2 selectionEnd;
 
 	Util::Array<Graphics::GraphicsEntityId> brushes;
 
