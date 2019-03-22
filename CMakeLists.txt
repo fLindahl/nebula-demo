@@ -6,8 +6,45 @@ cmake_minimum_required(VERSION 3.7.2)
 get_filename_component(FIPS_ROOT_DIR "../fips" ABSOLUTE)
 include(${FIPS_ROOT_DIR}/cmake/fips.cmake)
 
+
+# --- scripts should be set up before using fips ---
+# project(scripts CSharp)
+# add_library(scripts SHARED
+#     # App.config
+#     data/scripts/test.cs
+#     # Properties/Settings.settings
+#     )
+# target_compile_options(scripts
+#     PRIVATE "/langversion:6"
+#     PRIVATE "/unsafe"
+#     )
+# --- end scripts ---
+
 fips_setup(PROJECT demos)
+
+SET(N_PROJECT_NAME scripts)
+
+fips_project(${N_PROJECT_NAME} CSharp)
+
+    fips_begin_sharedlib(${N_PROJECT_NAME})
+        enable_language(CSharp)
+        fips_files(
+            data/scripts/test.cs
+        )
+    fips_end_sharedlib()
+    target_compile_options(${N_PROJECT_NAME}
+        PRIVATE "/langversion:6"
+        PRIVATE "/unsafe"
+        )
+    # we need to convert .pdb to .mdb files to load debugging symbols correctly
+    add_custom_command(TARGET ${N_PROJECT_NAME}
+        COMMAND pdb2mdb ${FIPS_PROJECT_DEPLOY_DIR}/${N_PROJECT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}
+        VERBATIM
+        POST_BUILD
+        )   
+
 fips_include_directories(.)
 # fips_ide_group(demos)
 fips_add_subdirectory(code)
 fips_finish()
+
