@@ -10,20 +10,6 @@ namespace Util
         public int strLen;
         public int heapBufferSize;
     }
-}
-
-public class Nebula
-{
-    [DllImport ("__Internal", EntryPoint="N_Print")]
-    static extern void Print(string val);
-
-
-    [DllImport ("__Internal", EntryPoint="Foobar", CharSet=CharSet.Ansi)]
-    static extern void Foobar(
-        [MarshalAs (UnmanagedType.CustomMarshaler,
-            MarshalTypeRef=typeof(StringMarshaler))]
-        String val
-    );
 
     class StringMarshaler : ICustomMarshaler {
 
@@ -40,7 +26,6 @@ public class Nebula
 
 		public void CleanUpNativeData (IntPtr pNativeData)
 		{
-			Print($"# StringMarshaler.CleanUpManagedData ({pNativeData:x})\n");
             Marshal.FreeHGlobal(pNativeData);
 		}
 
@@ -62,22 +47,14 @@ public class Nebula
 
             IntPtr ret = Marshal.AllocHGlobal(System.Runtime.InteropServices.Marshal.SizeOf(typeof(Util.String)));
             Marshal.StructureToPtr(str, ret, false);
-
-			Print($"# StringMarshaler.MarshalNativeToManaged for `{s}'={ret:x}\n");
 			return ret;
 		}
 
 		public object MarshalNativeToManaged (IntPtr pNativeData)
 		{
 			string s = Marshal.PtrToStringAnsi(pNativeData);
-			Print($"# StringMarshaler.MarshalNativeToManaged ({pNativeData:x})=`{s}'\n");
+            // Console.WriteLine($"# StringMarshaler.MarshalNativeToManaged ({pNativeData:x})=`{s}'\n");
 			return s;
 		}
 	}
-
-    static public void Main ()
-    {
-        Print("Hello Mono World");
-        Foobar("Foobar >> Util::String\n");
-    }
 }

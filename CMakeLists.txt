@@ -24,13 +24,26 @@ fips_setup(PROJECT demos)
 
 SET(N_PROJECT_NAME scripts)
 
-fips_project(${N_PROJECT_NAME} CSharp)
+fips_project(${N_PROJECT_NAME})
 
     fips_begin_sharedlib(${N_PROJECT_NAME})
         enable_language(CSharp)
-        fips_files(
-            data/scripts/test.cs
+        fips_src(
+            data/scripts
         )
+        fips_dir(data/scripts)
+            fips_files(
+                main.cs
+            )
+        fips_dir(data/scripts/engine)
+            fips_files(
+                api.cs
+                consolehook.cs
+            )
+        fips_dir(data/scripts/util)
+            fips_files(
+                string.cs
+            )
     fips_end_sharedlib()
     target_compile_options(${N_PROJECT_NAME}
         PRIVATE "/langversion:6"
