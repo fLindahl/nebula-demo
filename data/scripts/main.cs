@@ -1,5 +1,7 @@
 using System;
 using ConsoleHook;
+using Microsoft.Xna.Framework;
+using Nebula;
 
 namespace Nebula
 {
@@ -14,6 +16,8 @@ namespace Nebula
                 consoleWriter.WriteLineEvent += ConsoleEvents.WriteLineFunc;
                 Console.SetOut(consoleWriter);
             }
+
+            Matrix mat = Game.GetTransform(0);
         }
     }
 }
