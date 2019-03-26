@@ -3,21 +3,77 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 
-class Game
-{
-    [MethodImplAttribute(MethodImplOptions.InternalCall)]
-    public extern static Matrix GetTransform(uint entity);
-}
 
 namespace Nebula
 {
+    namespace Game
+    {
+        /*
+         * Entity
+         */
+        [StructLayout(LayoutKind.Sequential)]
+        public class Entity
+        {
+            private readonly uint id = uint.MaxValue;
 
+            public Entity(uint id)
+            {
+                this.id = id;
+            }
 
-public class Debug
-{
-    [DllImport ("__Internal", EntryPoint="N_Print")]
-    public static extern void Log(string val);
-}
+            public uint Id
+            {
+                get
+                {
+                    return id;
+                }
+            }
+
+            public override string ToString() { return this.id.ToString(); }
+
+            /// <summary>
+            /// Check whether this entity is valid (alive)
+            /// </summary>
+            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            public static extern bool IsValid();
+
+            /// <summary>
+            /// Retrieve the transform of an entity if it is registered to the component
+            /// </summary>
+            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            public extern Matrix GetTransform(Game.Entity entity);
+        }
+
+        public struct InstanceId
+        {
+            private uint id;
+
+            public InstanceId(uint id)
+            {
+                this.id = id;
+            }
+
+            public uint Id
+            {
+                get
+                {
+                    return id;
+                }
+            }
+        }
+    }
+
+    public class EntityManager
+    {
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern Game.Entity CreateEntity();
+    }
+
+    public class Debug
+    {
+        [DllImport ("__Internal", EntryPoint="N_Print")]
+        public static extern void Log(string val);
+    }
 
 // public class Entity
 // {
