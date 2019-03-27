@@ -10,11 +10,10 @@ namespace Nebula
         /*
          * Entity
          */
-        [StructLayout(LayoutKind.Sequential)]
-        public struct Entity
+        public struct Entity : IEquatable<Entity>
         {
-            private uint id;
-
+            private UInt32 id;
+            
             public Entity(uint id)
             {
                 this.id = id;
@@ -42,6 +41,8 @@ namespace Nebula
                 {
                     // TODO: Send set transform message.
                     // maybe check if this entity is registered first and register it if necessary?
+                    Console.WriteLine(value);
+                    SetTransform(this, value);
                 }
             }
 
@@ -64,6 +65,14 @@ namespace Nebula
             /// </summary>
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             private extern Matrix GetTransform(Game.Entity entity);
+
+            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            private extern void SetTransform(Game.Entity entity, ref Matrix mat);
+
+            public bool Equals(Entity other)
+            {
+                return this.id == other.id;
+            }
         }
 
         public struct InstanceId
