@@ -34,11 +34,11 @@ fips_project(${N_PROJECT_NAME})
         PRIVATE "/unsafe"
         )
     # we need to convert .pdb to .mdb files to load debugging symbols correctly
-    # add_custom_command(TARGET ${N_PROJECT_NAME}
-    #     COMMAND pdb2mdb ${FIPS_PROJECT_DEPLOY_DIR}/${N_PROJECT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}
-    #     VERBATIM
-    #     POST_BUILD
-    #     )   
+    add_custom_command(TARGET ${N_PROJECT_NAME}
+        COMMAND pdb2mdb ${FIPS_PROJECT_DEPLOY_DIR}/${N_PROJECT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}
+        VERBATIM
+        POST_BUILD
+        )   
 
 fips_include_directories(.)
 # fips_ide_group(demos)

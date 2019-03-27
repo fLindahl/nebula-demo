@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 
-
 namespace Nebula
 {
     namespace Game
@@ -12,9 +11,9 @@ namespace Nebula
          * Entity
          */
         [StructLayout(LayoutKind.Sequential)]
-        public class Entity
+        public struct Entity
         {
-            private readonly uint id = uint.MaxValue;
+            private uint id;
 
             public Entity(uint id)
             {
@@ -29,19 +28,42 @@ namespace Nebula
                 }
             }
 
+            /// <summary>
+            /// This entitys transform
+            /// </summary>
+            public Matrix Transform
+            {
+                get
+                {
+                    return GetTransform(this);
+                }
+
+                set
+                {
+                    // TODO: Send set transform message.
+                    // maybe check if this entity is registered first and register it if necessary?
+                }
+            }
+
+            public bool IsValid()
+            {
+                return IsAlive(this);
+            }
+
+
             public override string ToString() { return this.id.ToString(); }
 
             /// <summary>
             /// Check whether this entity is valid (alive)
             /// </summary>
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            public static extern bool IsValid();
+            private static extern bool IsAlive(Entity e);
 
             /// <summary>
             /// Retrieve the transform of an entity if it is registered to the component
             /// </summary>
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
-            public extern Matrix GetTransform(Game.Entity entity);
+            private extern Matrix GetTransform(Game.Entity entity);
         }
 
         public struct InstanceId

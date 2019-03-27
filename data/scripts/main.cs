@@ -17,11 +17,10 @@ namespace Nebula
                 Console.SetOut(consoleWriter);
             }
 
-            Console.WriteLine("entity = ghdsgashgsdhgasogaog");
             Game.Entity entity = Nebula.EntityManager.CreateEntity();
+            Matrix mat = entity.GetTransform(entity);
             Console.WriteLine("entity = {0}", entity);
-            Matrix m = entity.GetTransform(entity);
-            Console.WriteLine("matrix = {0}", m);
+            Console.WriteLine("matrix = {0}", mat);
         }
     }
 }
