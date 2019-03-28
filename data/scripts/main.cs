@@ -2,9 +2,33 @@ using System;
 using ConsoleHook;
 using Microsoft.Xna.Framework;
 using Nebula;
+using System.Reflection;
 
 namespace Nebula
 {
+    struct PlayerData
+    {
+        Vector3 position;
+        float speed;
+        int health;
+    };
+    
+    class Component<T>
+    {
+        public void Create()
+        {
+            Type typeinfo = typeof(T);
+            MemberInfo[] members = typeinfo.FindMembers(MemberTypes.Field, BindingFlags.Default, Type.FilterName, "ReferenceEquals");
+            foreach (var member in members)
+            {
+                Console.Write(member.Name.ToString());
+                Console.Write(" : ");
+                Console.WriteLine(member.ReflectedType.ToString());
+            }
+            // Interop.SetupComponent()
+        }
+    }
+
     public class AppEntry
     {
         static public void Main()
@@ -19,35 +43,10 @@ namespace Nebula
 
             Game.Entity entity = Nebula.EntityManager.CreateEntity();
             Matrix mat = entity.Transform;
-            Console.WriteLine("entity = {0}", entity);
-            Console.WriteLine("matrix = {0}", mat);
 
-            entity = Nebula.EntityManager.CreateEntity();
-            mat = entity.Transform;
-            Console.WriteLine("entity = {0}", entity);
-            Console.WriteLine("matrix = {0}", mat);
-
-            entity = Nebula.EntityManager.CreateEntity();
-            mat = entity.Transform;
-            Console.WriteLine("entity = {0}", entity);
-            Console.WriteLine("matrix = {0}", mat);
-
-            entity = Nebula.EntityManager.CreateEntity();
-            mat = entity.Transform;
-            Console.WriteLine("entity = {0}", entity);
-            Console.WriteLine("matrix = {0}", mat);
-
-            entity = Nebula.EntityManager.CreateEntity();
-            mat = entity.Transform;
-            Console.WriteLine("entity = {0}", entity);
-            Console.WriteLine("matrix = {0}", mat);
-
-            mat.M11 = 11;
-            mat.M12 = 12;
-            mat.M13 = 13;
-            entity.Transform = mat;
-
-            Console.WriteLine("entityTransform = {0}", entity.Transform);
+            Component<PlayerData> c = new Component<PlayerData>();
+            Console.WriteLine("here");
+            c.Create();
         }
     }
 }

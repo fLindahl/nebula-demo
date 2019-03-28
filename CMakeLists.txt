@@ -18,16 +18,7 @@ fips_project(${N_PROJECT_NAME})
             fips_files(
                 main.cs
             )
-        fips_dir(data/scripts/engine)
-            fips_files(
-                api.cs
-                consolehook.cs
-            )
-        fips_dir(data/scripts/util)
-            fips_files(
-                string.cs
-            )
-        fips_deps(xna_math)
+        fips_deps(nebula_mono)
     fips_end_sharedlib()
     target_compile_options(${N_PROJECT_NAME}
         PRIVATE "/langversion:6"
