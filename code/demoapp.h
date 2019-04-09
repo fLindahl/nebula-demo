@@ -21,6 +21,8 @@
 #include "graphicsfeature/graphicsfeatureunit.h"
 #include "audiofeature/audiofeatureunit.h"
 #include "scripting/scriptserver.h"
+#include "nsharp/monoserver.h"
+
 
 namespace Demo
 {
@@ -53,7 +55,7 @@ protected:
     void Browse();
 
 	Ptr<Audio::AudioDevice> audioDevice;
-	Ptr<Scripting::ScriptServer> scriptserver;
+	Ptr<Scripting::MonoServer> monoserver;
 
 	Ptr<BaseGameFeature::BaseGameFeatureUnit> gameFeature;
 	Ptr<GraphicsFeature::GraphicsFeatureUnit> graphicsFeature;

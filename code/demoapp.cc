@@ -19,7 +19,6 @@
 #include "imgui.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "dynui/im3d/im3d.h"
-#include "scripting/mono/monoserver.h"
 #include "vertextool.h"
 
 #ifdef __WIN32__
@@ -70,8 +69,8 @@ DemoApplication::Open()
         this->inputServer->Open();
         this->gfxServer->Open();
 
-		this->scriptserver = Scripting::MonoServer::Create();
-		this->scriptserver->Open();
+		this->monoserver = Scripting::MonoServer::Create();
+		this->monoserver->Open();
 
         SizeT width = this->GetCmdLineArgs().GetInt("-w", 800);
         SizeT height = this->GetCmdLineArgs().GetInt("-h", 600);

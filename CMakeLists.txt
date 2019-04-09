@@ -18,7 +18,7 @@ fips_project(${N_PROJECT_NAME})
             fips_files(
                 main.cs
             )
-        fips_deps(nebula_mono)
+        fips_deps(NebulaEngine)
     fips_end_sharedlib()
     target_compile_options(${N_PROJECT_NAME}
         PRIVATE "/langversion:6"
