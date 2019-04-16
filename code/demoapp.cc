@@ -208,6 +208,9 @@ DemoApplication::Open()
 
 		// IO::AssignRegistry::Instance()->SetAssign(IO::Assign("scripts", "tool:data/scripts"));
 
+		auto assembly = this->monoserver->Load("bin:scripts.dll");
+		this->monoserver->Exec(assembly, "Nebula.AppEntry::Main()");
+		
         return true;
     }
     return false;
